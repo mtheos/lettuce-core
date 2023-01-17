@@ -151,6 +151,21 @@ class MasterSlaveConnectionWrapper<K, V> implements StatefulRedisMasterSlaveConn
     }
 
     @Override
+    public void setAutoBatchCommands(boolean autoBatch) {
+        delegate.setAutoBatchCommands(autoBatch);
+    }
+
+    @Override
+    public void setAutoBatchDelay(Duration delay) {
+        delegate.setAutoBatchDelay(delay);
+    }
+
+    @Override
+    public void setAutoBatchSize(int size) {
+        delegate.setAutoBatchSize(size);
+    }
+
+    @Override
     public void flushCommands() {
         delegate.flushCommands();
     }

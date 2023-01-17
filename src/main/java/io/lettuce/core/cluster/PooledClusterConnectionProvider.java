@@ -15,6 +15,7 @@
  */
 package io.lettuce.core.cluster;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -95,6 +96,9 @@ class PooledClusterConnectionProvider<K, V>
     private Partitions partitions;
 
     private boolean autoFlushCommands = true;
+    private boolean autoBatchCommands = false;
+    private Duration autoBatchDelay = Duration.ofMillis(5);
+    private int autoBatchSize = 500;
 
     private ReadFrom readFrom;
 
@@ -605,6 +609,36 @@ class PooledClusterConnectionProvider<K, V>
     }
 
     @Override
+    public void setAutoBatchCommands(boolean autoBatch) {
+
+        synchronized (stateLock) {
+            this.autoBatchCommands = autoBatch;
+        }
+
+        connectionProvider.forEach(connection -> connection.setAutoBatchCommands(autoBatch));
+    }
+
+    @Override
+    public void setAutoBatchDelay(Duration delay) {
+
+        synchronized (stateLock) {
+            this.autoBatchDelay = delay;
+        }
+
+        connectionProvider.forEach(connection -> connection.setAutoBatchDelay(delay));
+    }
+
+    @Override
+    public void setAutoBatchSize(int size) {
+
+        synchronized (stateLock) {
+            this.autoBatchSize = size;
+        }
+
+        connectionProvider.forEach(connection -> connection.setAutoBatchSize(size));
+    }
+
+    @Override
     public void flushCommands() {
         connectionProvider.forEach(StatefulConnection::flushCommands);
     }
@@ -717,6 +751,9 @@ class PooledClusterConnectionProvider<K, V>
             connection = connection.thenApply(c -> {
                 synchronized (stateLock) {
                     c.setAutoFlushCommands(autoFlushCommands);
+                    c.setAutoBatchCommands(autoBatchCommands);
+                    c.setAutoBatchDelay(autoBatchDelay);
+                    c.setAutoBatchSize(autoBatchSize);
                     c.addListener(message -> onPushMessage(actualNode, message));
                 }
                 return c;

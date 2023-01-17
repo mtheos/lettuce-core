@@ -16,6 +16,7 @@
 package io.lettuce.core;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -119,6 +120,21 @@ public class CommandListenerWriter implements RedisChannelWriter {
     @Override
     public void setAutoFlushCommands(boolean autoFlush) {
         delegate.setAutoFlushCommands(autoFlush);
+    }
+
+    @Override
+    public void setAutoBatchCommands(boolean autoBatch) {
+        delegate.setAutoBatchCommands(autoBatch);
+    }
+
+    @Override
+    public void setAutoBatchDelay(Duration delay) {
+        delegate.setAutoBatchDelay(delay);
+    }
+
+    @Override
+    public void setAutoBatchSize(int size) {
+        delegate.setAutoBatchSize(size);
     }
 
     @Override

@@ -18,6 +18,7 @@ package io.lettuce.core.cluster;
 import static io.lettuce.core.cluster.SlotHash.*;
 
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -488,6 +489,21 @@ class ClusterDistributionChannelWriter implements RedisChannelWriter {
     @Override
     public void setAutoFlushCommands(boolean autoFlush) {
         getClusterConnectionProvider().setAutoFlushCommands(autoFlush);
+    }
+
+    @Override
+    public void setAutoBatchCommands(boolean autoBatch) {
+        getClusterConnectionProvider().setAutoBatchCommands(autoBatch);
+    }
+
+    @Override
+    public void setAutoBatchDelay(Duration delay) {
+        getClusterConnectionProvider().setAutoBatchDelay(delay);
+    }
+
+    @Override
+    public void setAutoBatchSize(int size) {
+        getClusterConnectionProvider().setAutoBatchSize(size);
     }
 
     @Override

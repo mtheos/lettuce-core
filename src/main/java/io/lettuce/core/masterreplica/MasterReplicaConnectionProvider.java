@@ -17,6 +17,7 @@ package io.lettuce.core.masterreplica;
 
 import static io.lettuce.core.masterreplica.ReplicaUtils.*;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -68,6 +69,9 @@ class MasterReplicaConnectionProvider<K, V> {
     private List<RedisNodeDescription> knownNodes = new ArrayList<>();
 
     private boolean autoFlushCommands = true;
+    private boolean autoBatchCommands = false;
+    private Duration autoBatchDelay = Duration.ofMillis(5);
+    private int autoBatchSize = 500;
 
     private final Object stateLock = new Object();
 
@@ -271,6 +275,45 @@ class MasterReplicaConnectionProvider<K, V> {
     }
 
     /**
+     * Disable or enable auto-batch behavior for all connections.
+     *
+     * @param autoBatch state of autoBatch.
+     * @see StatefulConnection#setAutoBatchCommands(boolean)
+     */
+    public void setAutoBatchCommands(boolean autoBatch) {
+        synchronized (stateLock) {
+            this.autoBatchCommands = autoBatch;
+            connectionProvider.forEach(connection -> connection.setAutoBatchCommands(autoBatch));
+        }
+    }
+
+    /**
+     * Sets the maximum auto-batch delay for all connections.
+     *
+     * @param delay maximum delay before flushing.
+     * @see StatefulConnection#setAutoBatchDelay(Duration)
+     */
+    public void setAutoBatchDelay(Duration delay) {
+        synchronized (stateLock) {
+            this.autoBatchDelay = delay;
+            connectionProvider.forEach(connection -> connection.setAutoBatchDelay(delay));
+        }
+    }
+
+    /**
+     * Sets the maximum batch size for auto-batch for all connections.
+     *
+     * @param size maximum queued commands before flushing.
+     * @see StatefulConnection#setAutoBatchSize(int)
+     */
+    public void setAutoBatchSize(int size) {
+        synchronized (stateLock) {
+            this.autoBatchSize = size;
+            connectionProvider.forEach(connection -> connection.setAutoBatchSize(size));
+        }
+    }
+
+    /**
      * @return all connections that are connected.
      */
     @Deprecated
@@ -342,6 +385,9 @@ class MasterReplicaConnectionProvider<K, V> {
             connectionFuture.thenAccept(connection -> {
                 synchronized (stateLock) {
                     connection.setAutoFlushCommands(autoFlushCommands);
+                    connection.setAutoBatchCommands(autoBatchCommands);
+                    connection.setAutoBatchDelay(autoBatchDelay);
+                    connection.setAutoBatchSize(autoBatchSize);
                 }
             });
 

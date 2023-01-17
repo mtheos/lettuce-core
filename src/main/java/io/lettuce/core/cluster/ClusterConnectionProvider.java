@@ -16,6 +16,7 @@
 package io.lettuce.core.cluster;
 
 import java.io.Closeable;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 import io.lettuce.core.ReadFrom;
@@ -108,6 +109,31 @@ interface ClusterConnectionProvider extends Closeable {
      * @param autoFlush state of autoFlush.
      */
     void setAutoFlushCommands(boolean autoFlush);
+
+    /**
+     * Disable or enable auto-batch behavior. Default is {@code false}. If autoBatchCommands is enabled, multiple commands
+     * can be buffered before being automatically flushed to the transport. Commands are buffered until the configured batch
+     * size or maximum delay is reached.
+     *
+     * @param autoBatch state of autoBatch.
+     */
+    void setAutoBatchCommands(boolean autoBatch);
+
+    /**
+     * Sets the auto-batch delay. Default is {@code 5 milliseconds}. If autoBatchCommands is enabled, this is the maximum
+     * amount of time that will pass before buffered commands are flushed to the transport.
+     *
+     * @param delay maximum delay to auto-batch.
+     */
+    void setAutoBatchDelay(Duration delay);
+
+    /**
+     * Sets the auto-batch size. Default is {@code 50}. If autoBatchCommands is enabled, a flush will be triggered
+     * when this number of commands have been buffered, regardless of how long it has been since the last flush.
+     *
+     * @param size maximum size of a batch.
+     */
+    void setAutoBatchSize(int size);
 
     /**
      * Flush pending commands. This commands forces a flush on the channel and can be used to buffer ("pipeline") commands to

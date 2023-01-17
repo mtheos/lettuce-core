@@ -357,6 +357,18 @@ public abstract class RedisChannelHandler<K, V> implements Closeable, Connection
         getChannelWriter().setAutoFlushCommands(autoFlush);
     }
 
+    public void setAutoBatchCommands(boolean autoBatch) {
+        getChannelWriter().setAutoBatchCommands(autoBatch);
+    }
+
+    public void setAutoBatchDelay(Duration delay) {
+        getChannelWriter().setAutoBatchDelay(delay);
+    }
+
+    public void setAutoBatchSize(int size) {
+        getChannelWriter().setAutoBatchSize(size);
+    }
+
     public void flushCommands() {
         getChannelWriter().flushCommands();
     }

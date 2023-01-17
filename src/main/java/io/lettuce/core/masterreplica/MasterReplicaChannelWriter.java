@@ -15,6 +15,7 @@
  */
 package io.lettuce.core.masterreplica;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
@@ -235,6 +236,21 @@ class MasterReplicaChannelWriter implements RedisChannelWriter {
     @Override
     public void setAutoFlushCommands(boolean autoFlush) {
         masterReplicaConnectionProvider.setAutoFlushCommands(autoFlush);
+    }
+
+    @Override
+    public void setAutoBatchCommands(boolean autoBatch) {
+        masterReplicaConnectionProvider.setAutoBatchCommands(autoBatch);
+    }
+
+    @Override
+    public void setAutoBatchDelay(Duration delay) {
+        masterReplicaConnectionProvider.setAutoBatchDelay(delay);
+    }
+
+    @Override
+    public void setAutoBatchSize(int size) {
+        masterReplicaConnectionProvider.setAutoBatchSize(size);
     }
 
     @Override
