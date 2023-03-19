@@ -15,6 +15,7 @@
  */
 package io.lettuce.core;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
@@ -67,6 +68,21 @@ public class EmptyRedisChannelWriter implements RedisChannelWriter {
 
     @Override
     public void setAutoFlushCommands(boolean autoFlush) {
+    }
+
+    @Override
+    public void setAutoBatchCommands(boolean autoBatch) {
+
+    }
+
+    @Override
+    public void setAutoBatchDelay(Duration delay) {
+
+    }
+
+    @Override
+    public void setAutoBatchSize(int size) {
+
     }
 
     @Override

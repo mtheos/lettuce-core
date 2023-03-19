@@ -20,6 +20,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.net.SocketAddress;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -126,6 +127,9 @@ class PooledClusterConnectionProviderUnitTests {
 
         assertThat(connection).isSameAs(nodeConnectionMock);
         verify(connection).setAutoFlushCommands(true);
+        verify(connection).setAutoBatchCommands(false);
+        verify(connection).setAutoBatchDelay(Duration.ofMillis(5));
+        verify(connection).setAutoBatchSize(500);
         verify(connection).addListener(any(PushListener.class));
         verifyNoMoreInteractions(connection);
     }
@@ -143,6 +147,9 @@ class PooledClusterConnectionProviderUnitTests {
 
         assertThat(connection).isSameAs(nodeConnectionMock);
         verify(connection).setAutoFlushCommands(true);
+        verify(connection).setAutoBatchCommands(false);
+        verify(connection).setAutoBatchDelay(Duration.ofMillis(5));
+        verify(connection).setAutoBatchSize(500);
         verify(connection).addListener(any(PushListener.class));
         verifyNoMoreInteractions(connection);
     }
