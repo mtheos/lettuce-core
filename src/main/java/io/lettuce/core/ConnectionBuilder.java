@@ -23,16 +23,11 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import io.lettuce.core.protocol.*;
+import io.netty.handler.flush.FlushConsolidationHandler;
 import jdk.net.ExtendedSocketOptions;
 import reactor.core.publisher.Mono;
 import io.lettuce.core.internal.LettuceAssert;
-import io.lettuce.core.protocol.CommandEncoder;
-import io.lettuce.core.protocol.CommandHandler;
-import io.lettuce.core.protocol.ConnectionInitializer;
-import io.lettuce.core.protocol.ConnectionWatchdog;
-import io.lettuce.core.protocol.Endpoint;
-import io.lettuce.core.protocol.ReconnectionListener;
-import io.lettuce.core.protocol.RedisHandshakeHandler;
 import io.lettuce.core.resource.ClientResources;
 import io.lettuce.core.resource.EpollProvider;
 import io.lettuce.core.resource.IOUringProvider;
@@ -70,6 +65,7 @@ public class ConnectionBuilder {
     private Endpoint endpoint;
 
     private Supplier<CommandHandler> commandHandlerSupplier;
+    private Supplier<FlushHandler> flushHandlerSupplier;
 
     private ChannelGroup channelGroup;
 
@@ -122,6 +118,7 @@ public class ConnectionBuilder {
         handlers.add(new CommandEncoder());
         handlers.add(getHandshakeHandler());
         handlers.add(commandHandlerSupplier.get());
+        handlers.add(flushHandlerSupplier.get());
 
         handlers.add(new ConnectionEventTrigger(connectionEvents, connection, clientResources.eventBus()));
 
@@ -207,6 +204,11 @@ public class ConnectionBuilder {
 
     public ConnectionBuilder commandHandler(Supplier<CommandHandler> supplier) {
         this.commandHandlerSupplier = supplier;
+        return this;
+    }
+
+    public ConnectionBuilder flushHandler(Supplier<FlushHandler> supplier) {
+        this.flushHandlerSupplier = supplier;
         return this;
     }
 

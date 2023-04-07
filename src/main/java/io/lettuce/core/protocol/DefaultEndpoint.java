@@ -106,14 +106,6 @@ public class DefaultEndpoint implements RedisChannelWriter, Endpoint, PushHandle
 
     private boolean autoFlushCommands = true;
 
-    private boolean autoBatchCommands = false;
-
-    private Duration autoBatchDelay = Duration.ofMillis(5);
-
-    private int autoBatchSize = 500;
-
-    private ScheduledFuture<?> autoBatchFuture;
-
     private boolean inActivation = false;
 
     private ConnectionWatchdog connectionWatchdog;
@@ -165,32 +157,22 @@ public class DefaultEndpoint implements RedisChannelWriter, Endpoint, PushHandle
 
     @Override
     public void setAutoFlushCommands(boolean autoFlush) {
-        this.autoFlushCommands = autoFlush;
-        setAutoBatchCommands(false);
+        channel.pipeline().get(FlushHandler.class).setAutoFlushCommands(autoFlush);
     }
 
     @Override
     public void setAutoBatchCommands(boolean autoBatch) {
-        this.autoBatchCommands = autoBatch;
-        if (autoBatchCommands) {
-            setAutoFlushCommands(false);
-            startAutoBatch();
-        } else {
-            stopAutoBatch();
-        }
+        channel.pipeline().get(FlushHandler.class).setAutoBatchCommands(autoBatch);
     }
 
     @Override
     public void setAutoBatchDelay(Duration delay) {
-        this.autoBatchDelay = delay;
-        if (autoBatchCommands) {
-            startAutoBatch();
-        }
+        channel.pipeline().get(FlushHandler.class).setAutoBatchDelay(delay);
     }
 
     @Override
     public void setAutoBatchSize(int size) {
-        this.autoBatchSize = size;
+        channel.pipeline().get(FlushHandler.class).setAutoBatchSize(size);
     }
 
     @Override
@@ -206,26 +188,6 @@ public class DefaultEndpoint implements RedisChannelWriter, Endpoint, PushHandle
     @Override
     public List<PushListener> getPushListeners() {
         return pushListeners;
-    }
-
-    private void startAutoBatch() {
-        long ms = autoBatchDelay.toNanos(); // TODO confirm if sub-ms is worth it
-        if (autoBatchFuture != null) {
-            autoBatchFuture.cancel(false);
-        }
-        autoBatchFuture = channel.eventLoop().scheduleWithFixedDelay(this::autoFlush, ms, ms, TimeUnit.NANOSECONDS);
-    }
-
-    private void stopAutoBatch() {
-        if (autoBatchFuture != null) {
-            autoBatchFuture.cancel(false);
-        }
-    }
-
-    private void autoFlush() {
-        if (commandBuffer.size() > 0) {
-            flushCommands(commandBuffer);
-        }
     }
 
     @Override
@@ -256,9 +218,6 @@ public class DefaultEndpoint implements RedisChannelWriter, Endpoint, PushHandle
 
             } else {
                 writeToBuffer(command);
-                if (autoBatchCommands && commandBuffer.size() >= autoBatchSize) {
-                    channel.eventLoop().execute(this::flushCommands);
-                }
             }
         } finally {
             sharedLock.decrementWriters();

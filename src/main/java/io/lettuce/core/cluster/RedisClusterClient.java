@@ -34,6 +34,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import io.lettuce.core.protocol.*;
 import reactor.core.publisher.Mono;
 import io.lettuce.core.*;
 import io.lettuce.core.api.StatefulRedisConnection;
@@ -57,10 +58,6 @@ import io.lettuce.core.internal.Futures;
 import io.lettuce.core.internal.LettuceAssert;
 import io.lettuce.core.internal.LettuceLists;
 import io.lettuce.core.output.KeyValueStreamingChannel;
-import io.lettuce.core.protocol.CommandExpiryWriter;
-import io.lettuce.core.protocol.CommandHandler;
-import io.lettuce.core.protocol.DefaultEndpoint;
-import io.lettuce.core.protocol.PushHandler;
 import io.lettuce.core.pubsub.PubSubCommandHandler;
 import io.lettuce.core.pubsub.PubSubEndpoint;
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
@@ -553,7 +550,7 @@ public class RedisClusterClient extends AbstractRedisClient {
 
         ConnectionFuture<StatefulRedisConnection<K, V>> connectionFuture = connectStatefulAsync(connection, endpoint,
                 getFirstUri(), socketAddressSupplier,
-                () -> new CommandHandler(getClusterClientOptions(), getResources(), endpoint));
+                () -> new CommandHandler(getClusterClientOptions(), getResources(), endpoint), () -> new FlushHandler(getClusterClientOptions(), getResources(), endpoint));
 
         return connectionFuture.whenComplete((conn, throwable) -> {
             if (throwable != null) {
@@ -617,7 +614,7 @@ public class RedisClusterClient extends AbstractRedisClient {
 
         ConnectionFuture<StatefulRedisPubSubConnection<K, V>> connectionFuture = connectStatefulAsync(connection, endpoint,
                 getFirstUri(), socketAddressSupplier,
-                () -> new PubSubCommandHandler<>(getClusterClientOptions(), getResources(), codec, endpoint));
+                () -> new PubSubCommandHandler<>(getClusterClientOptions(), getResources(), codec, endpoint), () -> new FlushHandler(getClusterClientOptions(), getResources(), endpoint));
         return connectionFuture.whenComplete((conn, throwable) -> {
             if (throwable != null) {
                 connection.closeAsync();
@@ -707,7 +704,7 @@ public class RedisClusterClient extends AbstractRedisClient {
             StatefulRedisClusterConnectionImpl<K, V> connection, Supplier<CommandHandler> commandHandlerSupplier) {
 
         ConnectionFuture<T> future = connectStatefulAsync(connection, endpoint, getFirstUri(), socketAddressSupplier,
-                commandHandlerSupplier);
+                commandHandlerSupplier, () -> new FlushHandler(getClusterClientOptions(), getResources(), endpoint));
 
         return Mono.fromCompletionStage(future).doOnError(t -> logger.warn(t.getMessage()));
     }
@@ -716,7 +713,7 @@ public class RedisClusterClient extends AbstractRedisClient {
             StatefulRedisConnectionImpl<K, V> connection, Supplier<CommandHandler> commandHandlerSupplier) {
 
         ConnectionFuture<T> future = connectStatefulAsync(connection, endpoint, getFirstUri(), socketAddressSupplier,
-                commandHandlerSupplier);
+                commandHandlerSupplier, () -> new FlushHandler(getClusterClientOptions(), getResources(), endpoint));
 
         return Mono.fromCompletionStage(future).doOnError(t -> logger.warn(t.getMessage()));
     }
@@ -793,10 +790,10 @@ public class RedisClusterClient extends AbstractRedisClient {
     @SuppressWarnings("unchecked")
     private <K, V, T extends StatefulRedisClusterConnectionImpl<K, V>, S> ConnectionFuture<S> connectStatefulAsync(T connection,
             DefaultEndpoint endpoint, RedisURI connectionSettings, Mono<SocketAddress> socketAddressSupplier,
-            Supplier<CommandHandler> commandHandlerSupplier) {
+            Supplier<CommandHandler> commandHandlerSupplier, Supplier<FlushHandler> flushHandlerSupplier) {
 
         ConnectionBuilder connectionBuilder = createConnectionBuilder(connection, connection.getConnectionState(), endpoint,
-                connectionSettings, socketAddressSupplier, commandHandlerSupplier);
+                connectionSettings, socketAddressSupplier, commandHandlerSupplier, flushHandlerSupplier);
 
         ConnectionFuture<RedisChannelHandler<K, V>> future = initializeChannelAsync(connectionBuilder);
 
@@ -810,10 +807,10 @@ public class RedisClusterClient extends AbstractRedisClient {
     @SuppressWarnings("unchecked")
     private <K, V, T extends StatefulRedisConnectionImpl<K, V>, S> ConnectionFuture<S> connectStatefulAsync(T connection,
             DefaultEndpoint endpoint, RedisURI connectionSettings, Mono<SocketAddress> socketAddressSupplier,
-            Supplier<CommandHandler> commandHandlerSupplier) {
+            Supplier<CommandHandler> commandHandlerSupplier, Supplier<FlushHandler> flushHandlerSupplier) {
 
         ConnectionBuilder connectionBuilder = createConnectionBuilder(connection, connection.getConnectionState(), endpoint,
-                connectionSettings, socketAddressSupplier, commandHandlerSupplier);
+                connectionSettings, socketAddressSupplier, commandHandlerSupplier, flushHandlerSupplier);
 
         ConnectionFuture<RedisChannelHandler<K, V>> future = initializeChannelAsync(connectionBuilder);
 
@@ -821,8 +818,8 @@ public class RedisClusterClient extends AbstractRedisClient {
     }
 
     private <K, V> ConnectionBuilder createConnectionBuilder(RedisChannelHandler<K, V> connection, ConnectionState state,
-            DefaultEndpoint endpoint, RedisURI connectionSettings, Mono<SocketAddress> socketAddressSupplier,
-            Supplier<CommandHandler> commandHandlerSupplier) {
+        DefaultEndpoint endpoint, RedisURI connectionSettings, Mono<SocketAddress> socketAddressSupplier,
+        Supplier<CommandHandler> commandHandlerSupplier, Supplier<FlushHandler> flushHandlerSupplier) {
 
         ConnectionBuilder connectionBuilder;
         if (connectionSettings.isSsl()) {
@@ -842,6 +839,7 @@ public class RedisClusterClient extends AbstractRedisClient {
         connectionBuilder.clientResources(getResources());
         connectionBuilder.endpoint(endpoint);
         connectionBuilder.commandHandler(commandHandlerSupplier);
+        connectionBuilder.flushHandler(flushHandlerSupplier);
         connectionBuilder(socketAddressSupplier, connectionBuilder, connection.getConnectionEvents(), connectionSettings);
 
         return connectionBuilder;
